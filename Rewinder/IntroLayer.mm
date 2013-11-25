@@ -6,15 +6,9 @@
 //  Copyright Anonymous 2013. All rights reserved.
 //
 
-
-// Import the interfaces
 #import "IntroLayer.h"
 #import "HelloWorldLayer.h"
 
-
-#pragma mark - IntroLayer
-
-// HelloWorldLayer implementation
 @implementation IntroLayer
 
 // Helper class method that creates a Scene with the HelloWorldLayer as the only child.
@@ -63,4 +57,5 @@
 	[super onEnter];
 	[[CCDirector sharedDirector] replaceScene:[CCTransitionFade transitionWithDuration:1.0 scene:[HelloWorldLayer scene] ]];
 }
+
 @end

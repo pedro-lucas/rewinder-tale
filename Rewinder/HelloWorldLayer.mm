@@ -8,41 +8,24 @@
 
 // Import the interfaces
 #import "HelloWorldLayer.h"
-
-// Not included in "cocos2d.h"
 #import "CCPhysicsSprite.h"
-
-// Needed to obtain the Navigation Controller
 #import "AppDelegate.h"
-
-
-enum {
-	kTagParentNode = 1,
-};
-
-
-#pragma mark - HelloWorldLayer
+#import "IntroLevelLayer.h"
 
 @interface HelloWorldLayer()
--(void) initPhysics;
--(void) addNewSpriteAtPosition:(CGPoint)p;
--(void) createMenu;
+
 @end
 
 @implementation HelloWorldLayer
 
 +(CCScene *) scene
 {
-	// 'scene' is an autorelease object.
 	CCScene *scene = [CCScene node];
 	
-	// 'layer' is an autorelease object.
 	HelloWorldLayer *layer = [HelloWorldLayer node];
 	
-	// add layer as a child to scene
 	[scene addChild: layer];
 	
-	// return the scene
 	return scene;
 }
 
@@ -50,258 +33,228 @@ enum {
 {
 	if( (self=[super init])) {
 		
-		// enable events
-		
-		self.touchEnabled = YES;
-		self.accelerometerEnabled = YES;
-		CGSize s = [CCDirector sharedDirector].winSize;
-		
-		// init physics
-		[self initPhysics];
-		
-		// create reset button
-		[self createMenu];
-		
-		//Set up sprite
-		
-#if 1
-		// Use batch node. Faster
-		CCSpriteBatchNode *parent = [CCSpriteBatchNode batchNodeWithFile:@"blocks.png" capacity:100];
-		spriteTexture_ = [parent texture];
-#else
-		// doesn't use batch node. Slower
-		spriteTexture_ = [[CCTextureCache sharedTextureCache] addImage:@"blocks.png"];
-		CCNode *parent = [CCNode node];
-#endif
-		[self addChild:parent z:0 tag:kTagParentNode];
-		
-		
-		[self addNewSpriteAtPosition:ccp(s.width/2, s.height/2)];
-		
-		CCLabelTTF *label = [CCLabelTTF labelWithString:@"Tap screen" fontName:@"Marker Felt" fontSize:32];
-		[self addChild:label z:0];
-		[label setColor:ccc3(0,0,255)];
-		label.position = ccp( s.width/2, s.height-50);
-		
-		[self scheduleUpdate];
+        [self setTouchEnabled:YES];
+        
+        IntroLevelLayer *moveLayer = [[[IntroLevelLayer alloc] init] autorelease];
+        moveLayer.position = ccp(0, 0);
+        
+        [self addChild:moveLayer z:-1];
+        
+        //Create Sprite
+        _ball = [CCPhysicsSprite spriteWithFile:@"hero.png" rect:CGRectMake(0, 0, 40, 60)];
+        [self addChild:_ball];
+        
+        //Create world
+        b2Vec2 gravity = b2Vec2(0.0f, -12.0f);
+        _world = new b2World(gravity);
+        
+        _world->SetAllowSleeping(true);
+        
+        _world->SetContinuousPhysics(true);
+
+        GLESDebugDraw *m_debugDraw;
+        m_debugDraw = new GLESDebugDraw( PTM_RATIO );
+        _world->SetDebugDraw(m_debugDraw);
+        
+        uint32 flags = 0;
+        flags += b2Draw::e_shapeBit;
+        m_debugDraw->SetFlags(flags);
+        
+        // Create ball body and shape
+        b2BodyDef ballBodyDef;
+        ballBodyDef.type = b2_dynamicBody;
+        ballBodyDef.position.Set(6300.0/PTM_RATIO, 65.0/PTM_RATIO);
+        ballBodyDef.userData = _ball;
+        _body = _world->CreateBody(&ballBodyDef);
+        
+        b2PolygonShape circle;
+        circle.SetAsBox(_ball.contentSize.width/PTM_RATIO/2.0, _ball.contentSize.height/PTM_RATIO/2.0);
+        
+        [_ball setPTMRatio:PTM_RATIO];
+        [_ball setB2Body:_body];
+        
+        b2FixtureDef ballShapeDef;
+        ballShapeDef.shape = &circle;
+        ballShapeDef.density = 1.0f;
+        ballShapeDef.friction = 0.2f;
+        _body->CreateFixture(&ballShapeDef);
+        
+        [self createEdges];
+        
+        _body->SetLinearVelocity(b2Vec2(-10.0, 0.0));
+        
+        [self movePlataform];
+        
+        [self schedule:@selector(updateBox2d:)];
+        
 	}
 	return self;
 }
 
--(void) dealloc
-{
-	delete world;
-	world = NULL;
-	
-	delete m_debugDraw;
-	m_debugDraw = NULL;
-	
-	[super dealloc];
-}	
-
--(void) createMenu
-{
-	// Default font size will be 22 points.
-	[CCMenuItemFont setFontSize:22];
-	
-	// Reset Button
-	CCMenuItemLabel *reset = [CCMenuItemFont itemWithString:@"Reset" block:^(id sender){
-		[[CCDirector sharedDirector] replaceScene: [HelloWorldLayer scene]];
-	}];
-
-	// to avoid a retain-cycle with the menuitem and blocks
-	__block id copy_self = self;
-
-	// Achievement Menu Item using blocks
-	CCMenuItem *itemAchievement = [CCMenuItemFont itemWithString:@"Achievements" block:^(id sender) {
-		
-		
-		GKAchievementViewController *achivementViewController = [[GKAchievementViewController alloc] init];
-		achivementViewController.achievementDelegate = copy_self;
-		
-		AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-		
-		[[app navController] presentModalViewController:achivementViewController animated:YES];
-		
-		[achivementViewController release];
-	}];
-	
-	// Leaderboard Menu Item using blocks
-	CCMenuItem *itemLeaderboard = [CCMenuItemFont itemWithString:@"Leaderboard" block:^(id sender) {
-		
-		
-		GKLeaderboardViewController *leaderboardViewController = [[GKLeaderboardViewController alloc] init];
-		leaderboardViewController.leaderboardDelegate = copy_self;
-		
-		AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-		
-		[[app navController] presentModalViewController:leaderboardViewController animated:YES];
-		
-		[leaderboardViewController release];
-	}];
-	
-	CCMenu *menu = [CCMenu menuWithItems:itemAchievement, itemLeaderboard, reset, nil];
-	
-	[menu alignItemsVertically];
-	
-	CGSize size = [[CCDirector sharedDirector] winSize];
-	[menu setPosition:ccp( size.width/2, size.height/2)];
-	
-	
-	[self addChild: menu z:-1];	
-}
-
--(void) initPhysics
-{
-	
-	CGSize s = [[CCDirector sharedDirector] winSize];
-	
-	b2Vec2 gravity;
-	gravity.Set(0.0f, -10.0f);
-	world = new b2World(gravity);
-	
-	
-	// Do we want to let bodies sleep?
-	world->SetAllowSleeping(true);
-	
-	world->SetContinuousPhysics(true);
-	
-	m_debugDraw = new GLESDebugDraw( PTM_RATIO );
-	world->SetDebugDraw(m_debugDraw);
-	
-	uint32 flags = 0;
-	flags += b2Draw::e_shapeBit;
-	//		flags += b2Draw::e_jointBit;
-	//		flags += b2Draw::e_aabbBit;
-	//		flags += b2Draw::e_pairBit;
-	//		flags += b2Draw::e_centerOfMassBit;
-	m_debugDraw->SetFlags(flags);		
-	
-	
-	// Define the ground body.
+- (void)createEdges {
+    
+    //CGSize winSize = [CCDirector sharedDirector].winSize;
+    
+    // Create edges around the entire screen
 	b2BodyDef groundBodyDef;
-	groundBodyDef.position.Set(0, 0); // bottom-left corner
+	groundBodyDef.position.Set(0, 0);
+    
+    
+    b2BodyDef bodyDef;
+	bodyDef.position.Set(5000.0 / PTM_RATIO, 100.0/PTM_RATIO);
+	b2Body *body = _world->CreateBody(&bodyDef);
 	
-	// Call the body factory which allocates memory for the ground body
-	// from a pool and creates the ground box shape (also from a pool).
-	// The body is also added to the world.
-	b2Body* groundBody = world->CreateBody(&groundBodyDef);
-	
-	// Define the ground box shape.
-	b2EdgeShape groundBox;		
-	
-	// bottom
-	
-	groundBox.Set(b2Vec2(0,0), b2Vec2(s.width/PTM_RATIO,0));
-	groundBody->CreateFixture(&groundBox,0);
-	
-	// top
-	groundBox.Set(b2Vec2(0,s.height/PTM_RATIO), b2Vec2(s.width/PTM_RATIO,s.height/PTM_RATIO));
-	groundBody->CreateFixture(&groundBox,0);
-	
-	// left
-	groundBox.Set(b2Vec2(0,s.height/PTM_RATIO), b2Vec2(0,0));
-	groundBody->CreateFixture(&groundBox,0);
-	
-	// right
-	groundBox.Set(b2Vec2(s.width/PTM_RATIO,s.height/PTM_RATIO), b2Vec2(s.width/PTM_RATIO,0));
-	groundBody->CreateFixture(&groundBox,0);
-}
-
--(void) draw
-{
-	//
-	// IMPORTANT:
-	// This is only for debug purposes
-	// It is recommend to disable it
-	//
-	[super draw];
-	
-	ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position );
-	
-	kmGLPushMatrix();
-	
-	world->DrawDebugData();	
-	
-	kmGLPopMatrix();
-}
-
--(void) addNewSpriteAtPosition:(CGPoint)p
-{
-	CCLOG(@"Add sprite %0.2f x %02.f",p.x,p.y);
-	// Define the dynamic body.
-	//Set up a 1m squared box in the physics world
-	b2BodyDef bodyDef;
-	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(p.x/PTM_RATIO, p.y/PTM_RATIO);
-	b2Body *body = world->CreateBody(&bodyDef);
-	
-	// Define another box shape for our dynamic body.
 	b2PolygonShape dynamicBox;
-	dynamicBox.SetAsBox(.5f, .5f);//These are mid points for our 1m box
+	dynamicBox.SetAsBox(40.0/PTM_RATIO/2.0, 40.0/PTM_RATIO/2.0);
 	
-	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
-	fixtureDef.shape = &dynamicBox;	
-	fixtureDef.density = 1.0f;
-	fixtureDef.friction = 0.3f;
+	fixtureDef.shape = &dynamicBox;
 	body->CreateFixture(&fixtureDef);
-	
+    
+    CCSprite *boxBlock = [CCSprite spriteWithFile:@"hero.png" rect:CGRectMake(0, 0, 40, 40)];
+    boxBlock.position = ccp(5000, 100);
+    [self addChild:boxBlock];
+//
+//    b2BodyDef groundBodyDefTop;
+//	groundBodyDefTop.position.Set(0, winSize.height/PTM_RATIO);
+//
+//    b2BodyDef groundBodyDefLeft;
+//	groundBodyDefLeft.position.Set(0, 0);
+//
+//    b2BodyDef groundBodyDefRight;
+//	groundBodyDefRight.position.Set(6400/PTM_RATIO, 0);
 
-	CCNode *parent = [self getChildByTag:kTagParentNode];
+	b2Body *groundBody = _world->CreateBody(&groundBodyDef);
+//	b2Body *groundBodyTop = _world->CreateBody(&groundBodyDefTop);
+//	b2Body *groundBodyLeft = _world->CreateBody(&groundBodyDefLeft);
+//	b2Body *groundBodyRight = _world->CreateBody(&groundBodyDefRight);
 	
-	//We have a 64x64 sprite sheet with 4 different 32x32 images.  The following code is
-	//just randomly picking one of the images
-	int idx = (CCRANDOM_0_1() > .5 ? 0:1);
-	int idy = (CCRANDOM_0_1() > .5 ? 0:1);
-	CCPhysicsSprite *sprite = [CCPhysicsSprite spriteWithTexture:spriteTexture_ rect:CGRectMake(32 * idx,32 * idy,32,32)];
-	[parent addChild:sprite];
+    b2EdgeShape ground;
+	b2FixtureDef boxShape;
 	
-	[sprite setPTMRatio:PTM_RATIO];
-	[sprite setB2Body:body];
-	[sprite setPosition: ccp( p.x, p.y)];
-
+    boxShape.shape = &ground;
+	//wall definitions
+	ground.Set(b2Vec2(0.0, 64.0/PTM_RATIO), b2Vec2(6400.0/PTM_RATIO, 64.0/PTM_RATIO)); //down
+	groundBody->CreateFixture(&boxShape);
+    
+    ground.Set(b2Vec2(0.0, 300.0/PTM_RATIO), b2Vec2(2000.0/PTM_RATIO, 0.0/PTM_RATIO)); //down
+	groundBody->CreateFixture(&boxShape);
+    
+//    ground.Set(b2Vec2(0, 0), b2Vec2(6400/PTM_RATIO, 0)); //left
+//	groundBody->CreateFixture(&boxShape);
+//    
+//    ground.Set(b2Vec2(0,0), b2Vec2(0, winSize.height/PTM_RATIO)); //down
+//	groundBody->CreateFixture(&boxShape);
+//
+//    ground.Set(b2Vec2(0,0), b2Vec2(0, winSize.height/PTM_RATIO)); //top
+//	groundBody->CreateFixture(&boxShape);
+    
 }
 
--(void) update: (ccTime) dt
-{
-	//It is recommended that a fixed time step is used with Box2D for stability
-	//of the simulation, however, we are using a variable time step here.
-	//You need to make an informed choice, the following URL is useful
-	//http://gafferongames.com/game-physics/fix-your-timestep/
-	
-	int32 velocityIterations = 8;
+- (void)updateBox2d:(ccTime) dt {
+    
+    int32 velocityIterations = 8;
 	int32 positionIterations = 1;
 	
 	// Instruct the world to perform a single step of simulation. It is
 	// generally best to keep the time step and iterations fixed.
-	world->Step(dt, velocityIterations, positionIterations);	
+	_world->Step(dt, velocityIterations, positionIterations);
+    
+    _ball.position = ccp(ceilf(_body->GetPosition().x * PTM_RATIO), ceilf(_body->GetPosition().y * PTM_RATIO));
+    
+    _body->SetLinearVelocity(b2Vec2(-10, _body->GetLinearVelocity().y));
+    
+//    _world->Step(dt, 1, 1);
+//    for(b2Body *b = _world->GetBodyList(); b; b=b->GetNext()) {
+//        if (b->GetUserData() == _ball) {
+//            
+//            CCSprite *ballData = (CCSprite *)b->GetUserData();
+//            NSLog(@"yPosition: %f - %f", b->GetPosition().y * PTM_RATIO, b->GetPosition().x * PTM_RATIO);
+//            
+//            //b->SetAngularVelocity(0);
+//            //_body->SetLinearVelocity(b2Vec2(-5, 0));
+//    
+//            ballData.position = ccp(ceilf(b->GetPosition().x * PTM_RATIO), b->GetPosition().y * PTM_RATIO);
+//            ballData.rotation = -1 * CC_RADIANS_TO_DEGREES(b->GetAngle());
+//        }
+//    }
+    
+    [self movePlataform];
+}
+
+- (void)movePlataform {
+    
+    CGSize winSize = [[CCDirector sharedDirector] winSize];
+    CGRect worldRect = CGRectMake(0, 0, 6400, 400);
+    CGPoint position = _ball.position;
+    
+    int x = MAX(position.x, worldRect.origin.x + winSize.width / 2);
+    int y = MAX(position.y, worldRect.origin.y + winSize.height / 2);
+    x = MIN(x, (worldRect.origin.x + worldRect.size.width) - winSize.width / 2);
+    y = MIN(y, (worldRect.origin.y + worldRect.size.height) - winSize.height/2);
+    CGPoint actualPosition = ccp(x, y);
+    
+    CGPoint centerOfView = ccp(winSize.width/2, winSize.height/2);
+    CGPoint viewPoint = ccpSub(centerOfView, actualPosition);
+    
+    self.position = viewPoint;
+    
+}
+
+- (void)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    
+    UITouch* touch = [touches anyObject];
+    CGPoint new_location = [touch locationInView: [touch view]];
+    new_location = [[CCDirector sharedDirector] convertToGL:new_location];
+    //NSLog(@"position: %@",NSStringFromCGPoint(new_location));
+    
+    hasActionMove = NO;
+    initialPoint = new_location;
+    
+    CGSize winSize = [CCDirector sharedDirector].winSize;
+    
+    if(new_location.x >= winSize.width / 2.0) {
+        _body->ApplyLinearImpulse(b2Vec2(0.0, 20),_body->GetPosition());
+    }else{
+//        _body->SetLinearVelocity(b2Vec2(-10, 0));
+    }
+    
+}
+
+- (void)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
+    hasActionMove = YES;
 }
 
 - (void)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	//Add a new body/atlas sprite at the touched location
-	for( UITouch *touch in touches ) {
-		CGPoint location = [touch locationInView: [touch view]];
-		
-		location = [[CCDirector sharedDirector] convertToGL: location];
-		
-		[self addNewSpriteAtPosition: location];
-	}
+//    UITouch* touch = [touches anyObject];
+//    CGPoint new_location = [touch locationInView: [touch view]];
+//    new_location = [[CCDirector sharedDirector] convertToGL:new_location];
+//    
+//    CGPoint add = CGPointMake(new_location.x - initialPoint.x, new_location.y - initialPoint.y);
+//    
+    //_body->SetLinearVelocity(b2Vec2(0, 0));
+    //_body->SetAngularVelocity(0);
+    //_body->ApplyLinearImpulse(b2Vec2(add.x * 0.1, add.y * 0.1),_body->GetPosition());
+    
+//    if(hasActionMove) {
+//        _body->SetLinearVelocity(b2Vec2(0, 0));
+//        _body->SetAngularVelocity(0);
+//        _body->ApplyLinearImpulse(b2Vec2(add.x * 0.1, add.y * 0.1),_body->GetPosition());
+//    }else{
+//        b2Vec2 force = b2Vec2(0, 0);
+//        _body->SetLinearVelocity(force);
+//        _body->SetAngularVelocity(0);
+//    }
 }
 
-#pragma mark GameKit delegate
-
--(void) achievementViewControllerDidFinish:(GKAchievementViewController *)viewController
+-(void) dealloc
 {
-	AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-	[[app navController] dismissModalViewControllerAnimated:YES];
-}
-
--(void) leaderboardViewControllerDidFinish:(GKLeaderboardViewController *)viewController
-{
-	AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-	[[app navController] dismissModalViewControllerAnimated:YES];
-}
+	delete _world;
+	_world = NULL;
+	_body = NULL;
+    
+	[super dealloc];
+}	
 
 @end

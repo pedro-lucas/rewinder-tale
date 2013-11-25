@@ -188,6 +188,12 @@
 		EBAD9FEE17BDC62D004D70BB /* IntroLayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBAD9FED17BDC62D004D70BB /* IntroLayer.mm */; };
 		EBAD9FF117BDC62D004D70BB /* GLES-Render.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBAD9FF017BDC62D004D70BB /* GLES-Render.mm */; };
 		EBAD9FF317BDC62D004D70BB /* blocks.png in Resources */ = {isa = PBXBuildFile; fileRef = EBAD9FF217BDC62D004D70BB /* blocks.png */; };
+		EBADA00017BDD732004D70BB /* IntroLevelLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = EBAD9FFF17BDD732004D70BB /* IntroLevelLayer.m */; };
+		EBADA00317BDDB24004D70BB /* GameManager.m in Sources */ = {isa = PBXBuildFile; fileRef = EBADA00217BDDB22004D70BB /* GameManager.m */; };
+		EBC040C717C59D660087C152 /* ball.png in Resources */ = {isa = PBXBuildFile; fileRef = EBC040C617C59D660087C152 /* ball.png */; };
+		EBC040CA17C6E4B70087C152 /* atlas.png in Resources */ = {isa = PBXBuildFile; fileRef = EBC040C917C6E4B70087C152 /* atlas.png */; };
+		EBC040CC17C70A510087C152 /* tile-1.png in Resources */ = {isa = PBXBuildFile; fileRef = EBC040CB17C70A500087C152 /* tile-1.png */; };
+		EBC040CE17CAEBF00087C152 /* hero.png in Resources */ = {isa = PBXBuildFile; fileRef = EBC040CD17CAEBEE0087C152 /* hero.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -569,6 +575,14 @@
 		EBAD9FEF17BDC62D004D70BB /* GLES-Render.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GLES-Render.h"; sourceTree = "<group>"; };
 		EBAD9FF017BDC62D004D70BB /* GLES-Render.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "GLES-Render.mm"; sourceTree = "<group>"; };
 		EBAD9FF217BDC62D004D70BB /* blocks.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = blocks.png; path = Resources/blocks.png; sourceTree = "<group>"; };
+		EBAD9FFE17BDD732004D70BB /* IntroLevelLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IntroLevelLayer.h; sourceTree = "<group>"; };
+		EBAD9FFF17BDD732004D70BB /* IntroLevelLayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IntroLevelLayer.m; sourceTree = "<group>"; };
+		EBADA00117BDDB22004D70BB /* GameManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GameManager.h; sourceTree = "<group>"; };
+		EBADA00217BDDB22004D70BB /* GameManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GameManager.m; sourceTree = "<group>"; };
+		EBC040C617C59D660087C152 /* ball.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ball.png; sourceTree = "<group>"; };
+		EBC040C917C6E4B70087C152 /* atlas.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = atlas.png; sourceTree = "<group>"; };
+		EBC040CB17C70A500087C152 /* tile-1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tile-1.png"; sourceTree = "<group>"; };
+		EBC040CD17CAEBEE0087C152 /* hero.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = hero.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -629,12 +643,16 @@
 		EBAD9DC217BDC626004D70BB /* Rewinder */ = {
 			isa = PBXGroup;
 			children = (
+				EBAD9FF917BDD440004D70BB /* Levels */,
+				EBAD9FFA17BDD447004D70BB /* Persons */,
 				EBAD9FE617BDC62D004D70BB /* AppDelegate.h */,
 				EBAD9FE717BDC62D004D70BB /* AppDelegate.mm */,
 				EBAD9FE917BDC62D004D70BB /* HelloWorldLayer.h */,
 				EBAD9FEA17BDC62D004D70BB /* HelloWorldLayer.mm */,
 				EBAD9FEC17BDC62D004D70BB /* IntroLayer.h */,
 				EBAD9FED17BDC62D004D70BB /* IntroLayer.mm */,
+				EBADA00117BDDB22004D70BB /* GameManager.h */,
+				EBADA00217BDDB22004D70BB /* GameManager.m */,
 				EBAD9FEF17BDC62D004D70BB /* GLES-Render.h */,
 				EBAD9FF017BDC62D004D70BB /* GLES-Render.mm */,
 				EBAD9DC317BDC626004D70BB /* Resources */,
@@ -647,6 +665,10 @@
 		EBAD9DC317BDC626004D70BB /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				EBC040CD17CAEBEE0087C152 /* hero.png */,
+				EBC040CB17C70A500087C152 /* tile-1.png */,
+				EBC040C917C6E4B70087C152 /* atlas.png */,
+				EBC040C617C59D660087C152 /* ball.png */,
 				EBAD9DC417BDC626004D70BB /* Default.png */,
 				EBAD9DC617BDC626004D70BB /* Default@2x.png */,
 				EBAD9DC817BDC626004D70BB /* Default-568h@2x.png */,
@@ -1184,6 +1206,22 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		EBAD9FF917BDD440004D70BB /* Levels */ = {
+			isa = PBXGroup;
+			children = (
+				EBAD9FFE17BDD732004D70BB /* IntroLevelLayer.h */,
+				EBAD9FFF17BDD732004D70BB /* IntroLevelLayer.m */,
+			);
+			name = Levels;
+			sourceTree = "<group>";
+		};
+		EBAD9FFA17BDD447004D70BB /* Persons */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Persons;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1248,6 +1286,10 @@
 				EBAD9DDA17BDC626004D70BB /* iTunesArtwork in Resources */,
 				EBAD9F3317BDC62A004D70BB /* ChangeLog in Resources */,
 				EBAD9FF317BDC62D004D70BB /* blocks.png in Resources */,
+				EBC040C717C59D660087C152 /* ball.png in Resources */,
+				EBC040CA17C6E4B70087C152 /* atlas.png in Resources */,
+				EBC040CC17C70A510087C152 /* tile-1.png in Resources */,
+				EBC040CE17CAEBF00087C152 /* hero.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1416,6 +1458,8 @@
 				EBAD9FEB17BDC62D004D70BB /* HelloWorldLayer.mm in Sources */,
 				EBAD9FEE17BDC62D004D70BB /* IntroLayer.mm in Sources */,
 				EBAD9FF117BDC62D004D70BB /* GLES-Render.mm in Sources */,
+				EBADA00017BDD732004D70BB /* IntroLevelLayer.m in Sources */,
+				EBADA00317BDDB24004D70BB /* GameManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1533,6 +1577,7 @@
 				EBAD9FF817BDC62D004D70BB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
